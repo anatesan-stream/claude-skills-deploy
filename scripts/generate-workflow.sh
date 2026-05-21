@@ -44,12 +44,24 @@ print(f\"STAGING_APP_UUID='{staging}'\")
 print(f\"PROD_APP_UUID='{prod}'\")
 ")"
 
+# When called from init.sh (before /setup-coolify provisioning), app IDs are null (~).
+# Use placeholder strings so the workflow file is still generated; the actual UUIDs
+# and COOLIFY_URL will be embedded when /setup-coolify (provision) regenerates this file.
+NEEDS_PROVISION=false
 if [ -z "$STAGING_APP_UUID" ] || [ -z "$PROD_APP_UUID" ]; then
-  echo "ERROR: coolify.yaml is missing coolify_app_ids — run /setup-coolify (provision) first." >&2
-  exit 1
+  NEEDS_PROVISION=true
+  STAGING_APP_UUID="${STAGING_APP_UUID:-REPLACE_WITH_COOLIFY_APP_ID_STAGING}"
+  PROD_APP_UUID="${PROD_APP_UUID:-REPLACE_WITH_COOLIFY_APP_ID_PRODUCTION}"
+  echo "INFO: coolify_app_ids not yet set — workflow will contain placeholder UUIDs." >&2
+  echo "      Run /setup-coolify (provision) after setting up Doppler to replace them." >&2
 fi
 
-coolify_load_server "$SERVER_ALIAS"   # sets COOLIFY_URL
+if [ "$NEEDS_PROVISION" = "false" ]; then
+  coolify_load_server "$SERVER_ALIAS"   # sets COOLIFY_URL
+else
+  # No coolify.json available yet (or app IDs not provisioned) — use placeholder URL.
+  COOLIFY_URL="https://REPLACE_WITH_YOUR_COOLIFY_URL"
+fi
 
 # GHCR owner and package name from registry image path
 OWNER=$(echo "$REGISTRY_IMAGE" | awk -F'/' '{print $2}')
