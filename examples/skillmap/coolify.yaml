@@ -1,0 +1,27 @@
+project: skillmap
+server: vultr-stream
+doppler_project: skillmap
+registry:
+  image: ghcr.io/anatesan-stream/ai-upskilling
+  retention_tags: 5
+environments:
+  staging:
+    domain: skillmap-staging.cicd.streamlinity.com
+    doppler_environment: staging
+  production:
+    domain: skillmap.cicd.streamlinity.com
+    doppler_environment: production
+env_vars:
+- NEXT_PUBLIC_BASE_URL
+- DATABASE_URL
+- STRIPE_SECRET_KEY
+- STRIPE_WEBHOOK_SECRET
+- ANTHROPIC_API_KEY
+- RESEND_API_KEY
+- EMAIL_FROM
+- ADMIN_EMAIL
+- ADMIN_PASSWORD
+- ADMIN_SECRET
+coolify_app_ids:
+  staging: mngq0ldz4icrpjiq8dk5bsxg
+  production: m10wbve4l4hdqqzzm34pa7vn

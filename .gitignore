@@ -1,0 +1,11 @@
+.DS_Store
+*.log
+node_modules/
+.envrc
+.direnv/
+*.swp
+*.swo
+.vscode/
+.idea/
+/tmp/
+/scratch/
