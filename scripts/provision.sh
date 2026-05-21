@@ -50,12 +50,21 @@ DEST_UUID=$(coolify_get_destination_uuid "$SERVER_UUID")
 # destination_uuid is optional in the Coolify API for single-node installs
 echo "  server_uuid=$SERVER_UUID dest_uuid=${DEST_UUID:-<auto>}"
 
-# SSH host: vultr-stream alias maps to v_cicd_stream in ~/.ssh/config
-SSH_HOST_FILE="$HOME/.claude/coolify-ssh-map.json"
-if [ -f "$SSH_HOST_FILE" ]; then
-  SSH_HOST=$(python3 -c "import json; print(json.load(open('$SSH_HOST_FILE')).get('$SERVER_ALIAS',''))")
+# SSH host: read from ~/.claude/coolify.json server entry. REQUIRED — no fallback.
+# provision.sh creates a Docker volume on the Coolify server via SSH, so this must be set.
+SSH_HOST=$(python3 -c "
+import json
+d=json.load(open('$HOME/.claude/coolify.json'))
+e=d.get('servers',{}).get('$SERVER_ALIAS',{})
+print(e.get('ssh_host',''))
+")
+if [ -z "$SSH_HOST" ]; then
+  echo "ERROR: 'ssh_host' field is missing from servers.$SERVER_ALIAS in ~/.claude/coolify.json." >&2
+  echo "Add it manually or re-run /setup-coolify init. Example:" >&2
+  echo "  \"$SERVER_ALIAS\": { ..., \"ssh_host\": \"v_cicd_stream\" }" >&2
+  exit 1
 fi
-: "${SSH_HOST:=v_cicd_stream}"
+echo "  ssh_host=$SSH_HOST"
 
 # 2. Per-environment provisioning
 declare -A APP_UUIDS
