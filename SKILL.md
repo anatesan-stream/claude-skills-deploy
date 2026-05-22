@@ -46,9 +46,9 @@ annotation to change provisioning behaviour today.
 
 2. **Discover Coolify topology by lookup-by-name (no hardcoded UUIDs)**
    - Source `lib-coolify-api.sh`. Call `coolify_upsert_project "$PROJECT_NAME"` to get project UUID.
-   - Call `coolify_get_server_uuid "localhost"` (the canonical name on a single-node Coolify install; override possible in future). Bail if not found.
-   - Call `coolify_get_destination_uuid "$SERVER_UUID"`. Bail if not found.
-   - Call `coolify_get_github_app_uuid`. Bail if not found.
+   - Read the Coolify server name from `~/.claude/coolify.json` (`servers.<alias>.server_name`, default `localhost`). Call `coolify_get_server_uuid "$SERVER_NAME"`. Bail if not found.
+   - Call `coolify_get_destination_uuid "$SERVER_UUID"` (optional; single-node installs may not need it).
+   - Read `ssh_host` from `~/.claude/coolify.json`. REQUIRED — bail if missing (used in step 3 to create the Doppler-cache Docker volume on the Coolify VPS).
 
 3. **Upsert staging app**
    - Compute name: `${PROJECT_NAME}-staging` (e.g. `skillmap-staging`).
@@ -60,7 +60,7 @@ annotation to change provisioning behaviour today.
 
 5. **Write coolify_app_ids back to coolify.yaml** (cache optimization)
 
-6. **Trigger initial deploys** for both apps (`coolify_deploy_app`)
+6. **Done.** `provision.sh` does NOT trigger an initial deploy. The first deploy is fired by pushing to `main`, which activates the generated `.github/workflows/deploy.yml` (build → GHCR → deploy-staging → smoke-test → deploy-production). To redeploy manually, push any commit to `main` or trigger the workflow from the GitHub Actions UI.
 
 ## init flow
 
