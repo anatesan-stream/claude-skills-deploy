@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02.1-03-PLAN.md
-last_updated: "2026-05-22T19:27:36.692Z"
+stopped_at: Completed 02.1-02-PLAN.md
+last_updated: "2026-05-22T19:28:10.545Z"
 last_activity: 2026-05-22
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 10
-  completed_plans: 6
+  completed_plans: 8
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-05-21)
 ## Current Position
 
 Phase: 02.1 (new-user-onboarding) — EXECUTING
-Plan: 2 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-05-22
 
@@ -58,6 +58,8 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02-test-framework P02 | 5 | 1 tasks | 1 files |
 | Phase 02-test-framework P01 | 3 | 3 tasks | 1 files |
 | Phase 02.1-new-user-onboarding P03 | 2 | 1 tasks | 1 files |
+| Phase 02.1-new-user-onboarding P04 | 1 | 1 tasks | 1 files |
+| Phase 02.1-new-user-onboarding P02 | 2 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -80,6 +82,9 @@ Recent decisions affecting current work:
 - [Phase 02-test-framework]: E2E_SERVER env var replaces python3 coolify.json first-server fallback — simpler and explicit
 - [Phase 02-test-framework]: write_report() called idempotently from main body and cleanup() to ensure report written on both pass and fail paths
 - [Phase 02.1-new-user-onboarding]: D-08: Quick start section added to README.md above Prerequisites — 5-command happy path gives new users workflow overview before prerequisite wall
+- [Phase 02.1-new-user-onboarding]: D-09: Replace all maintainer-specific values in api-reference.md with generic placeholders (<your-coolify-domain>, <your-doppler-account>, <your-app-domain>, <your-ssh-host>); add blockquote substitution note at top of file
+- [Phase 02.1-new-user-onboarding]: SKILL.md step 2: server_name read from coolify.json (default localhost), ssh_host required — matches actual provision.sh flow
+- [Phase 02.1-new-user-onboarding]: SKILL.md step 6: provision.sh does not trigger deploy; first deploy fires via git push to main activating deploy.yml
 
 ### Roadmap Evolution
 
@@ -96,6 +101,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-22T19:27:36.690Z
-Stopped at: Completed 02.1-03-PLAN.md
+Last session: 2026-05-22T19:28:10.543Z
+Stopped at: Completed 02.1-02-PLAN.md
 Resume file: None
