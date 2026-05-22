@@ -88,6 +88,22 @@
 - Used exclusively by `provision.sh` for `docker volume create` on the Coolify VPS
 - Root or Docker-capable user required on the Coolify server
 
+## Coolify API Operational Notes
+
+**`allowed_ips` must be cleared before API calls work:**
+- Coolify may restrict API access to specific IPs by default. Every API call returns HTTP 403 (even with a valid token) until `allowed_ips` is set to `*` or your IP range.
+- Location: Coolify → Settings → Security
+- Required before: first `/setup-coolify validate` run
+
+**Coolify volume API does not exist:**
+- `POST /api/v1/volumes` is absent from Coolify (GitHub issue #4084, closed without implementation).
+- The skill works around this via SSH: `ssh ${SSH_HOST} "docker volume create ${VOLUME_NAME}"` then sets `custom_docker_run_options` via PATCH to mount the volume.
+- This is why `ssh_host` is a required field in `coolify.json`.
+
+**Coolify API tokens are stored as hashes (Laravel Sanctum):**
+- The plaintext token is shown once at creation and cannot be retrieved from Coolify later.
+- Generate via: Coolify → Settings → Keys & Tokens → API Tokens → Create Token (read + write scope).
+
 ## Webhooks & Event Systems
 
 **Incoming webhooks:**
@@ -119,12 +135,23 @@
 
 **Required GitHub Actions secrets (per target repo):**
 - `COOLIFY_API_KEY` — Coolify Bearer token; added manually to GitHub repo secrets
+- `COOLIFY_URL` — Coolify instance root URL (e.g. `https://coolify.cicd.streamlinity.com`); set via `gh secret set COOLIFY_URL`
 
 **Secrets location:**
 - Coolify API key: `~/.claude/coolify.json` (local) + GitHub Actions secret
 - Doppler personal token: Doppler CLI keychain (managed by `doppler login`)
 - Doppler service tokens: Set as Coolify env var `DOPPLER_TOKEN` per app; never stored on disk by this skill
 - All application secrets (DATABASE_URL, STRIPE_SECRET_KEY, etc.): stored in Doppler only; fetched at container start via `doppler run --fallback /etc/doppler-cache/secrets.json`
+
+## Reserved / Future Fields
+
+**`build_time: true` annotation on `env_vars` entries:**
+- Reserved for a future per-environment build mode. Under the current same-image promotion model, ALL `env_vars` (including `NEXT_PUBLIC_*` keys) are injected at container start via Doppler — never baked into the image.
+- `provision.sh` and `generate-workflow.sh` parse but ignore this annotation.
+- Do NOT add `# build_time: true` to current manifests; the field name is locked for a future breaking change.
+
+**`is_buildtime` in Coolify bulk-env API:**
+- Response-only in `PATCH /applications/{uuid}/envs/bulk` — not accepted in the request body for bulk updates.
 
 ## Placeholder / Sentinel Values
 

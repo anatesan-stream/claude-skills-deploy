@@ -97,6 +97,32 @@
 - Purpose: Ensures staging and production run byte-identical Docker images; prevents the "works on staging, breaks on prod" class of bugs caused by environment-specific builds
 - Constraint: No `--build-arg` may reference env-specific values. `generate-workflow.sh` includes a guard that exits with error if `NEXT_PUBLIC_BASE_URL` appears as a build-arg in the generated YAML.
 
+## One-Time Setup Flow
+
+Per `docs/architecture.md`, these 7 steps run once per domain/Coolify instance (steps ①–③ and ⑤–⑦ are CLI; only step ④ requires a browser):
+
+| Step | Action |
+|------|--------|
+| ① | `git clone claude-skills-deploy → ~/.claude/skills/setup-coolify/` |
+| ② | Configure `~/.claude/coolify.json` (Coolify URL, API key, Doppler account, ssh_host) |
+| ③ | `bash init/init.sh` in target repo → writes `coolify.yaml` + `.github/workflows/deploy.yml` |
+| ④ | Create Doppler project + `staging`/`production` configs + seed secrets (**browser step**) |
+| ⑤ | `/setup-coolify validate` — dry-run; no mutations |
+| ⑥ | `/setup-coolify` — provisions Coolify apps, creates Docker volumes, wires Doppler tokens, writes back UUIDs |
+| ⑦ | `git add coolify.yaml deploy.yml && git push` — activates GitHub Actions pipeline |
+
+## What Lives Where After Setup
+
+| Location | Contents | Committed? |
+|----------|----------|-----------|
+| `~/.claude/skills/setup-coolify/` | Skill files (SKILL.md, scripts, init, docs) | No — local install |
+| `~/.claude/coolify.json` | Coolify URL + API key + Doppler account + `ssh_host` | **Never** — contains secrets |
+| `<target-repo>/coolify.yaml` | Deploy manifest: project slug, server alias, domains, env var names | **Yes** — no secrets |
+| `<target-repo>/.github/workflows/deploy.yml` | GitHub Actions pipeline (build → GHCR → Coolify) | **Yes** |
+| GHCR | Docker images tagged by git SHA; last N tags retained | N/A |
+| Coolify (VPS) | Staging + production apps with `DOPPLER_TOKEN` env var | N/A |
+| Doppler | Project with `staging` + `production` configs; service tokens per env | N/A |
+
 ## Entry Points
 
 **`/setup-coolify` (provision):**

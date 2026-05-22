@@ -13,11 +13,11 @@
 - Fix approach: Add an optional `server_name` field to `coolify.json` server entries (default `"localhost"`). Read it in `provision.sh` the same way `ssh_host` is read.
 - Severity: **HIGH**
 
-**Fallback CREATE endpoint sends wrong type:**
-- Issue: `provision.sh` lines 99–101 try `POST /applications/dockerimage` first and fall back to `POST /applications/private-github-app`. The `private-github-app` endpoint requires a GitHub App source UUID — it is the wrong endpoint for a registry-image deployment and will return an error (not silently succeed) but the error message will be opaque.
-- Files: `scripts/provision.sh:99-101`
-- Impact: If `POST /applications/dockerimage` fails (e.g., a Coolify version that renamed the endpoint), the fallback produces a confusing API error rather than a useful message.
-- Fix approach: Remove the `private-github-app` fallback. If the primary endpoint fails, fail loudly with the actual response body.
+**Fallback CREATE endpoint — potentially correct but request body mismatch:**
+- Context: `references/api-reference.md` (from Phase 7 research) shows `POST /applications/private-github-app` with `"source_type": "registry"` as the correct endpoint for registry-based (same-image promotion) deploys. However, `provision.sh` lines 99–101 try `POST /applications/dockerimage` first and fall back to `POST /applications/private-github-app` — the bodies may differ between the primary and fallback paths.
+- Files: `scripts/provision.sh:99-101`, `references/api-reference.md`
+- Impact: If the primary `dockerimage` endpoint fails, the fallback may succeed or fail depending on Coolify version. The request body used for the fallback path has not been verified to include `source_type: "registry"` and other registry-specific fields.
+- Fix approach: Verify which endpoint the installed Coolify version supports; unify to a single endpoint with the correct body. Fail loudly on error with the actual response body.
 - Severity: **MEDIUM**
 
 **`doppler_download_secrets` defined but never called:**

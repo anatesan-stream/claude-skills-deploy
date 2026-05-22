@@ -81,15 +81,24 @@
 - `~/.claude/coolify.json` populated via `/setup-coolify init`
 
 **Production (Coolify VPS):**
+- Recommended: $6–12/mo VPS (2 vCPU, 4 GB RAM minimum); Ubuntu 22.04 LTS tested
+- Providers: Vultr, Hetzner, AWS EC2
+- Coolify install: `curl -fsSL https://cdn.coollabs.io/coolify/install.sh | sudo bash` (installs Docker + Coolify + systemd; 2–5 min)
 - Coolify (self-hosted; single-node with server named `localhost`)
 - Docker (for named volume management)
-- HTTPS / Let's Encrypt (Coolify-managed)
+- HTTPS / Let's Encrypt (Coolify-managed; requires DNS A record pointing to VPS before enabling)
+- `allowed_ips` in Coolify Settings → Security must be cleared (`*`) before API calls succeed
 - GHCR image pull access (public images or GHCR PAT configured in Coolify)
 
 **CI (GitHub Actions):**
 - `ubuntu-latest` runner
-- `COOLIFY_API_KEY` and `GITHUB_TOKEN` GitHub Actions secrets
-- GHCR write access (via `secrets.GITHUB_TOKEN` with `packages: write` permission)
+- `COOLIFY_API_KEY` — Coolify Bearer token (GitHub Actions secret, set manually per repo)
+- `COOLIFY_URL` — Coolify instance root URL (GitHub Actions secret, set via `gh secret set COOLIFY_URL`)
+- `GITHUB_TOKEN` — automatic; needs `packages: write` for GHCR push (set via repo Settings → Actions → General → Workflow permissions → Read and write)
+
+**Backward compatibility notes (Phase 8 additions):**
+- `build.context` / `build.dockerfile` in `coolify.yaml` — optional; absent fields default to `.` and `./Dockerfile`. Existing files without the `build:` block continue to work.
+- `ssh_host` in `coolify.json` — required as of Phase 8; Phase 7 implementations defaulted to `v_cicd_stream` when absent (fallback removed). Run `/setup-coolify init` to populate.
 
 ---
 
