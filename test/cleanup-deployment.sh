@@ -33,28 +33,38 @@ done
 
 # ── Report file validation + field extraction ──────────────────────────────────
 
-eval "$(python3 -c "
+# eval "$(python3 ...)" drops Python's exit code — capture output separately so
+# errors surface immediately rather than leaving variables unbound.
+_fields=$(python3 - "$REPORT_FILE" 2>&1 <<'PY'
 import json, sys
+
+report_file = sys.argv[1]
 try:
-    d = json.load(open('$REPORT_FILE'))
+    d = json.load(open(report_file))
 except FileNotFoundError:
-    raise SystemExit('ERROR: report file not found: $REPORT_FILE')
+    print(f"ERROR: report file not found: {report_file}", file=sys.stderr); sys.exit(1)
 except json.JSONDecodeError as e:
-    raise SystemExit(f'ERROR: invalid JSON in report file: {e}')
+    print(f"ERROR: invalid JSON in report file: {e}", file=sys.stderr); sys.exit(1)
 
-required = ['server_alias', 'ssh_host', 'coolify_project_uuid',
-            'staging_app_uuid', 'production_app_uuid', 'doppler_project']
+# Accept project_uuid as fallback for coolify_project_uuid (pre-phase-3 reports)
+project_uuid = d.get('coolify_project_uuid') or d.get('project_uuid', '')
+
+required = ['server_alias', 'ssh_host', 'staging_app_uuid', 'production_app_uuid', 'doppler_project']
 missing = [k for k in required if not d.get(k)]
+if not project_uuid:
+    missing.append('coolify_project_uuid')
 if missing:
-    raise SystemExit('ERROR: report file missing fields: ' + ', '.join(missing))
+    print("ERROR: report file missing fields: " + ", ".join(missing), file=sys.stderr); sys.exit(1)
 
-print(f\"SERVER_ALIAS='{d['server_alias']}'\")
-print(f\"SSH_HOST='{d['ssh_host']}'\")
-print(f\"COOLIFY_PROJECT_UUID='{d['coolify_project_uuid']}'\")
-print(f\"STAGING_APP_UUID='{d['staging_app_uuid']}'\")
-print(f\"PRODUCTION_APP_UUID='{d['production_app_uuid']}'\")
-print(f\"DOPPLER_PROJECT='{d['doppler_project']}'\")
-")"
+print(f"SERVER_ALIAS='{d['server_alias']}'")
+print(f"SSH_HOST='{d['ssh_host']}'")
+print(f"COOLIFY_PROJECT_UUID='{project_uuid}'")
+print(f"STAGING_APP_UUID='{d['staging_app_uuid']}'")
+print(f"PRODUCTION_APP_UUID='{d['production_app_uuid']}'")
+print(f"DOPPLER_PROJECT='{d['doppler_project']}'")
+PY
+) || { echo "$_fields" >&2; exit 1; }
+eval "$_fields"
 
 # ── Load server credentials ────────────────────────────────────────────────────
 
@@ -82,9 +92,18 @@ coolify_curl DELETE "/applications/$PRODUCTION_APP_UUID" >/dev/null 2>&1 \
 
 echo ""
 echo "=== Deleting Coolify project ==="
-coolify_curl DELETE "/projects/$COOLIFY_PROJECT_UUID" >/dev/null 2>&1 \
-  && echo "  ✓ deleted Coolify project $COOLIFY_PROJECT_UUID" \
-  || echo "  ⚠ could not delete Coolify project $COOLIFY_PROJECT_UUID (may already be deleted)"
+# Coolify requires apps to be fully removed before the project can be deleted.
+# Retry up to 3 times with a short sleep to let the API settle.
+_project_deleted=false
+for _attempt in 1 2 3; do
+  if coolify_curl DELETE "/projects/$COOLIFY_PROJECT_UUID" >/dev/null 2>&1; then
+    echo "  ✓ deleted Coolify project $COOLIFY_PROJECT_UUID"
+    _project_deleted=true
+    break
+  fi
+  [ "$_attempt" -lt 3 ] && sleep 3
+done
+$_project_deleted || echo "  ⚠ could not delete Coolify project $COOLIFY_PROJECT_UUID (remove manually)"
 
 echo ""
 echo "=== Removing Docker volumes via SSH ==="
