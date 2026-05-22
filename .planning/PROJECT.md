@@ -12,6 +12,9 @@ A developer can clone this repo, run one command, see a working hello-world depl
 
 ### Validated
 
+- ✓ Fix `generate-workflow.sh`: `needs: [deploy-staging, build]` + smoke URL `/api/health` — Validated in Phase 01: bug-fixes
+- ✓ Fix `provision.sh`: Doppler `returncode` check, hard-fail with per-key error — Validated in Phase 01: bug-fixes
+- ✓ Fix `provision.sh`: `server_name` read from `coolify.json` (default `localhost`) — Validated in Phase 01: bug-fixes
 - ✓ Idempotent Coolify provisioning via `/setup-coolify` — existing
 - ✓ Dry-run pre-flight validation via `/setup-coolify validate` — existing
 - ✓ Interactive repo bootstrap via `bash init/init.sh` (writes `coolify.yaml` + `deploy.yml`) — existing
@@ -24,11 +27,6 @@ A developer can clone this repo, run one command, see a working hello-world depl
 - ✓ Generated `.github/workflows/deploy.yml` — existing
 
 ### Active
-
-**Bug fixes (prerequisite for passing E2E test):**
-- [ ] Fix `generate-workflow.sh`: `needs: [smoke-staging, build]` → `needs: [deploy-staging, build]` — generated workflow currently invalid
-- [ ] Fix `provision.sh`: silent empty-value injection when `doppler secrets get` subprocess fails — should hard-fail with specific key + error
-- [ ] Fix `provision.sh`: hardcoded `coolify_get_server_uuid "localhost"` — should read from `coolify.json` with configurable `server_name` field (default `localhost`)
 
 **Test framework:**
 - [ ] Review and refine `test/e2e.sh` — full provision→deploy→smoke-test; no auto-cleanup (remove unconditional `trap EXIT` cleanup)
@@ -66,7 +64,7 @@ A developer can clone this repo, run one command, see a working hello-world depl
 |----------|-----------|---------|
 | Static workflow validation instead of live GitHub Actions run | Avoids external dependency, catches structural bugs fast (like the `smoke-staging` job name bug) | — Pending |
 | No auto-cleanup in E2E test | New users need to see the deployed result to build trust in the skill | — Pending |
-| Fix HIGH bugs before building test framework | E2E test would fail for the wrong reasons if workflow generation is broken | — Pending |
+| Fix HIGH bugs before building test framework | E2E test would fail for the wrong reasons if workflow generation is broken | Validated — Phase 01 complete |
 | `E2E_BASE_DOMAIN` env var for portability | Allows domain fork developers to run the same test against their Coolify server | — Pending |
 | Test report written to `test/results/` | Persists pass/fail state and URLs between test run and cleanup; enables maintainer CI assertions | — Pending |
 
@@ -88,4 +86,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-21 after initialization*
+*Last updated: 2026-05-22 — Phase 01: bug-fixes complete*
