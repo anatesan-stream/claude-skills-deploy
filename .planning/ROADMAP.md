@@ -24,7 +24,10 @@ deployment on their Coolify server.
   1. Running `/setup-coolify` on a repo generates a `deploy.yml` where `deploy-production.needs` references only jobs that exist in the file (`deploy-staging`, not `smoke-staging`)
   2. When `doppler secrets get` fails during provision, the script exits non-zero and prints the specific key name and error — no empty values are injected into Coolify
   3. `provision.sh` looks up the Coolify server UUID using `server_name` from `coolify.json` (defaulting to `localhost`), not a hardcoded string literal
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 01-01-PLAN.md — Fix BUG-01: generate-workflow.sh emits invalid `needs: [smoke-staging, build]` and polls `/` instead of `/api/health`
+- [ ] 01-02-PLAN.md — Fix BUG-02: provision.sh silently injects empty Doppler values when `doppler secrets get` fails
+- [ ] 01-03-PLAN.md — Fix BUG-03: provision.sh hardcodes server lookup as "localhost"; make it configurable via `server_name` in coolify.json
 
 **UI hint**: no
 
@@ -57,6 +60,6 @@ deployment on their Coolify server.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Bug Fixes | 0/TBD | Not started | - |
+| 1. Bug Fixes | 0/3 | Not started | - |
 | 2. Test Framework | 0/TBD | Not started | - |
 | 3. Cleanup Script | 0/TBD | Not started | - |
