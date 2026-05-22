@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 02-test-framework-02-01-PLAN.md
-last_updated: "2026-05-22T17:54:25.444Z"
+stopped_at: Phase 02.1 context gathered
+last_updated: "2026-05-22T19:01:12.313Z"
 last_activity: 2026-05-22
 progress:
-  total_phases: 3
+  total_phases: 4
   completed_phases: 2
   total_plans: 6
   completed_plans: 5
@@ -79,6 +79,10 @@ Recent decisions affecting current work:
 - [Phase 02-test-framework]: E2E_SERVER env var replaces python3 coolify.json first-server fallback — simpler and explicit
 - [Phase 02-test-framework]: write_report() called idempotently from main body and cleanup() to ensure report written on both pass and fail paths
 
+### Roadmap Evolution
+
+- Phase 02.1 inserted after Phase 2: new-user-onboarding (URGENT) — review identified 8 issues: hardcoded streamlinity domain values in scripts that silently fail for new users, stale docs, and missing "new domain quick start" guidance
+
 ### Pending Todos
 
 None yet.
@@ -90,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-22T16:37:05.745Z
-Stopped at: Completed 02-test-framework-02-01-PLAN.md
-Resume file: None
+Last session: 2026-05-22T19:01:12.311Z
+Stopped at: Phase 02.1 context gathered
+Resume file: .planning/phases/02.1-new-user-onboarding/02.1-CONTEXT.md
