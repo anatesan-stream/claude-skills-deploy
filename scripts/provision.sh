@@ -25,7 +25,12 @@ d=yaml.safe_load(open('$YAML_PATH'))
 print(f\"PROJECT='{d.get('project','')}'\")
 print(f\"SERVER_ALIAS='{d.get('server','')}'\")
 print(f\"DOPPLER_PROJECT='{d.get('doppler_project','')}'\")
-print(f\"REGISTRY_IMAGE='{d.get('registry',{}).get('image','')}'\")
+img=d.get('registry',{}).get('image','')
+last=img.rsplit('/',1)[-1]
+name,tag=(img.rsplit(':',1) if ':' in last else (img,'latest'))
+print(f\"REGISTRY_IMAGE='{img}'\")
+print(f\"REGISTRY_IMAGE_NAME='{name}'\")
+print(f\"REGISTRY_IMAGE_TAG='{tag}'\")
 print(f\"STAGING_DOMAIN='{d.get('environments',{}).get('staging',{}).get('domain','')}'\")
 print(f\"STAGING_DOPPLER='{d.get('environments',{}).get('staging',{}).get('doppler_environment','')}'\")
 print(f\"PROD_DOMAIN='{d.get('environments',{}).get('production',{}).get('domain','')}'\")
@@ -94,7 +99,7 @@ d = {
   'server_uuid': '$SERVER_UUID',
   'environment_name': 'production',
   'name': '$APP_NAME',
-  'docker_registry_image_name': '$REGISTRY_IMAGE',
+  'docker_registry_image_name': '$REGISTRY_IMAGE_NAME',
   'docker_registry_image_tag': 'main',
   'ports_exposes': '3000',
   'domains': 'https://$DOMAIN',
@@ -124,7 +129,7 @@ print(json.dumps({
   'domains': 'https://$DOMAIN',
   'is_auto_deploy_enabled': False,
   'custom_docker_run_options': '$EXPECTED_MOUNT',
-  'docker_registry_image_name': '$REGISTRY_IMAGE',
+  'docker_registry_image_name': '$REGISTRY_IMAGE_NAME',
   'health_check_enabled': True,
   'health_check_path': '/api/health',
   'health_check_port': 3000,

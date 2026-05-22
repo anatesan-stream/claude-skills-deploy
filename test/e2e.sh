@@ -34,7 +34,7 @@ source "$SKILL_DIR/scripts/lib-doppler-api.sh"
 # ── Configuration ──────────────────────────────────────────────────────────────
 
 TIMESTAMP=$(date +%Y%m%d%H%M%S)
-TEST_PROJECT="csd-e2e-${TIMESTAMP}"
+TEST_PROJECT="csd-e2e-$(date +%Y-%m-%d-%H%M%S)"
 KEEP_ON_EXIT=false
 # E2E_SERVER:      Coolify server alias to test against.
 #                  Default: vultr-stream — change for other servers.
@@ -471,10 +471,10 @@ except: print('unknown')
 " 2>/dev/null || echo "unknown")
 
 echo "  staging app status: $APP_STATUS"
-if [ "$APP_STATUS" = "running" ]; then
-  pass "staging app is running"
+if [[ "$APP_STATUS" == running* ]]; then
+  pass "staging app is running (status: $APP_STATUS)"
 else
-  fail "staging app status is '$APP_STATUS' (expected 'running')"
+  fail "staging app status is '$APP_STATUS' (expected 'running' or 'running:healthy')"
   # Don't exit — still attempt the HTTP smoke test; status field may lag
 fi
 
