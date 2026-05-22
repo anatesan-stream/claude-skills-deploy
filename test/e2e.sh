@@ -2,8 +2,9 @@
 # e2e.sh — End-to-end integration test for claude-skills-deploy.
 #
 # Creates a throwaway Coolify project + Doppler project, provisions staging +
-# production apps, triggers a staging deploy, smoke-tests the live URL, and
-# cleans up on failure via a trap; on success leaves both apps running.
+# production apps, triggers staging + production deploys, smoke-tests the live
+# staging URL, and cleans up on failure via a trap; on success leaves both
+# apps running.
 #
 # Usage:
 #   bash test/e2e.sh                                  # default server + domain
@@ -520,6 +521,61 @@ else
   fail "smoke test: could not reach https://${STAGING_DOMAIN} within ${SMOKE_TIMEOUT}s"
   echo "  This may be a Let's Encrypt cert delay. The deploy itself finished successfully."
   echo "  Verify manually: curl https://${STAGING_DOMAIN}/api/health"
+fi
+
+# ── Step 10: Promote image to production ──────────────────────────────────────
+
+step "Step 10: Promote image to production"
+
+coolify_curl PATCH "/applications/$PRD_APP_UUID" \
+  '{"docker_registry_image_tag": "latest"}' >/dev/null 2>&1
+echo "  patched production app image tag → latest"
+
+PRD_DEPLOYMENT_UUID=$(coolify_deploy_app "$PRD_APP_UUID")
+if [ -n "$PRD_DEPLOYMENT_UUID" ]; then
+  pass "production deploy triggered: deployment_uuid=$PRD_DEPLOYMENT_UUID"
+else
+  fail "production deploy trigger returned no deployment UUID"
+  exit 1
+fi
+
+START_TS=$(date +%s)
+PRD_DEPLOY_STATUS="unknown"
+while true; do
+  PRD_DEPLOY_STATUS=$(coolify_curl GET "/deployments/$PRD_DEPLOYMENT_UUID" 2>/dev/null \
+    | python3 -c "
+import json,sys
+try: print(json.load(sys.stdin).get('status','unknown'))
+except: print('unknown')
+" 2>/dev/null || echo "unknown")
+
+  ELAPSED=$(($(date +%s) - START_TS))
+  echo "  [${ELAPSED}s] production deploy status: $PRD_DEPLOY_STATUS"
+
+  case "$PRD_DEPLOY_STATUS" in
+    finished) break ;;
+    error|failed|cancelled)
+      fail "production deploy ended with status: $PRD_DEPLOY_STATUS"
+      exit 1 ;;
+  esac
+  [ $ELAPSED -ge $DEPLOY_TIMEOUT ] && fail "production deploy timed out after ${DEPLOY_TIMEOUT}s" && exit 1
+  sleep 5
+done
+
+pass "production deploy finished (took $(($(date +%s) - START_TS))s)"
+
+PRD_STATUS=$(coolify_curl GET "/applications/$PRD_APP_UUID" 2>/dev/null \
+  | python3 -c "
+import json,sys
+try: print(json.load(sys.stdin).get('status','unknown'))
+except: print('unknown')
+" 2>/dev/null || echo "unknown")
+
+echo "  production app status: $PRD_STATUS"
+if [[ "$PRD_STATUS" == running* ]]; then
+  pass "production app is running (status: $PRD_STATUS)"
+else
+  fail "production app status is '$PRD_STATUS' (expected 'running' or 'running:healthy')"
 fi
 
 # ── Write test report ─────────────────────────────────────────────────────────
