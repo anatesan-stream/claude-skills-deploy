@@ -166,7 +166,11 @@ See **[docs/schema.md](./docs/schema.md)** for full `coolify.yaml` and `coolify.
 
 ## E2E integration test
 
-`test/e2e.sh` exercises the full skill against your real infrastructure — creates a throwaway Coolify project + Doppler project, provisions staging + production apps, deploys a hello-world container, smoke-tests the live staging URL, and cleans up unconditionally via a `trap`.
+`test/e2e.sh` exercises the full skill against your real infrastructure — creates a throwaway Coolify project + Doppler project, provisions staging + production apps, deploys a hello-world container, and smoke-tests the live staging URL.
+
+**Success behaviour:** on a clean run, staging and production apps are left running so you can inspect the live deployment. A JSON report is written to `test/results/YYYYMMDD-HHMMSS.json` on every run (pass or fail). Run cleanup when ready: `bash test/cleanup-deployment.sh <report-file>`.
+
+**Failure behaviour:** cleanup (teardown of all Coolify + Doppler resources) runs automatically via `trap EXIT`. Use `--keep` to suppress teardown and inspect the failure state manually.
 
 **One-time setup** (build and push the test image to GHCR — needs a PAT with `write:packages` scope):
 
@@ -178,12 +182,14 @@ bash test/push-hello-world.sh
 **Run the test** (~3-5 minutes):
 
 ```bash
-bash test/e2e.sh                              # uses first server in ~/.claude/coolify.json
-bash test/e2e.sh --server hetzner-strategem  # test a different server alias
-bash test/e2e.sh --keep                      # skip cleanup (debug failures)
+bash test/e2e.sh                                  # default server (vultr-stream) + domain (cicd.streamlinity.com)
+bash test/e2e.sh --server hetzner-strategem       # test a different server alias
+bash test/e2e.sh --keep                           # skip cleanup on failure (debug)
+E2E_SERVER=other-alias bash test/e2e.sh           # override server via env var
+E2E_BASE_DOMAIN=ci.example.com bash test/e2e.sh  # override base domain
 ```
 
-The test exercises `validate.sh` → `provision.sh` → deploy trigger → deployment API polling → HTTPS smoke test (`/api/health` HTTP 200 + body check). If any step fails, cleanup still runs. See `test/hello-world/` for the nginx:alpine test container (port 3000, `/api/health` endpoint).
+The test exercises `validate.sh` → `provision.sh` → deploy trigger → deployment API polling → HTTPS smoke test (`/api/health` HTTP 200 + body check). If any step fails, cleanup runs and a report is still written. See `test/hello-world/` for the nginx:alpine test container (port 3000, `/api/health` endpoint).
 
 ---
 

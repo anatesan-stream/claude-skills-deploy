@@ -254,7 +254,7 @@ git push
 
 2. **Trigger a test push.** Push any commit to `main`. The workflow runs:
    - Build Docker image → push to GHCR with `sha-<commit>` tag
-   - Patch staging app → trigger staging deploy → smoke test (HTTP 200 on `/`)
+   - Patch staging app → trigger staging deploy → smoke test (HTTP 200 on `/api/health`)
    - On smoke test green: patch production app → trigger production deploy
 
 3. **Check Coolify UI.** Both apps (`<project>-staging` and `<project>-production`) should
