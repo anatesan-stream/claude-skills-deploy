@@ -79,6 +79,12 @@ using the schema below.
 > removed. Scripts will fail loudly if the field is missing. Run `/setup-coolify init`
 > to populate this file interactively.
 
+### Optional Fields per Server Entry
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `server_name` | `"localhost"` | Coolify-side name of the managed Docker host node. The Coolify UI lets you rename the node from the default `"localhost"` (Settings → Servers). `provision.sh` uses this value to look up the server UUID via `GET /servers`. Set this only if your Coolify instance has a custom server name; otherwise omit it and the default applies. |
+
 ---
 
 ## Complete Annotated Example
@@ -260,6 +266,18 @@ Required in `~/.claude/coolify.json` server entries as of this skill release. Ph
 implementations defaulted to `v_cicd_stream` when absent — this fallback has been
 removed. Update your `~/.claude/coolify.json` to add `"ssh_host": "<alias>"` to each
 server entry. The `/setup-coolify init` interactive flow now prompts for this value.
+
+### `server_name` (added in Phase 1 bug fixes)
+
+Optional `server_name` field in `~/.claude/coolify.json` server entries. Defaults to `"localhost"` —
+the conventional name of the managed Docker host on a single-node Coolify install.
+Existing `coolify.json` files that omit `server_name` continue to work unchanged: `provision.sh`
+falls back to `"localhost"` when the field is absent.
+
+Set `server_name` only if you have renamed your Coolify server node in the Coolify UI (Settings →
+Servers) to something other than `localhost`. Without this fix, `provision.sh` failed
+with `ERROR: server 'localhost' not found in Coolify` on any instance with a custom
+server name.
 
 ### `coolify_app_ids` (carried from Phase 7)
 
