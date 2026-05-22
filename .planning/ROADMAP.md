@@ -60,6 +60,6 @@ deployment on their Coolify server.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Bug Fixes | 0/3 | Not started | - |
+| 1. Bug Fixes | 2/3 | In Progress|  |
 | 2. Test Framework | 0/TBD | Not started | - |
 | 3. Cleanup Script | 0/TBD | Not started | - |

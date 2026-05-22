@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-bug-fixes/01-01-PLAN.md
-last_updated: "2026-05-22T07:28:40.034Z"
+stopped_at: Completed 01-bug-fixes-01-02-PLAN.md
+last_updated: "2026-05-22T07:28:46.109Z"
 last_activity: 2026-05-22
 progress:
   total_phases: 3
@@ -67,6 +67,8 @@ Recent decisions affecting current work:
 - Roadmap: Static workflow validation instead of live GitHub Actions run
 - [Phase 01-bug-fixes]: D-01: needs: [smoke-staging] → needs: [deploy-staging] — smoke test is a step inside deploy-staging, not a separate job
 - [Phase 01-bug-fixes]: D-02: smoke test URL / → /api/health — aligns with Coolify health_check_path set in provision.sh
+- [Phase 01-bug-fixes]: D-03: Loop all env_var keys before exiting — accumulate all failures then raise SystemExit
+- [Phase 01-bug-fixes]: D-04: Per-key error format: ERROR: doppler secrets get KEY_NAME failed: <stderr>
 
 ### Pending Todos
 
@@ -79,6 +81,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-22T07:28:31.755Z
-Stopped at: Completed 01-bug-fixes/01-01-PLAN.md
+Last session: 2026-05-22T07:28:46.107Z
+Stopped at: Completed 01-bug-fixes-01-02-PLAN.md
 Resume file: None
