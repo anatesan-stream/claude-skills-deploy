@@ -11,7 +11,8 @@ deployment on their Coolify server.
 ## Phases
 
 - [ ] **Phase 1: Bug Fixes** - Patch three HIGH bugs in provision.sh and generate-workflow.sh that would cause the E2E test to fail for the wrong reasons
-- [ ] **Phase 2: Test Framework** - Build the E2E test runner, static workflow validator, and wire them together so a passing run proves the skill is correct
+- [x] **Phase 2: Test Framework** - Build the E2E test runner, static workflow validator, and wire them together so a passing run proves the skill is correct
+- [ ] **Phase 02.1: new-user-onboarding (URGENT)** - Remove maintainer-specific defaults and stale docs that silently fail for new users
 - [ ] **Phase 3: Cleanup Script** - Add the separate teardown script that lets an operator delete the hello-world deployment after inspecting it
 
 ## Phase Details
@@ -45,6 +46,27 @@ deployment on their Coolify server.
 - [x] 02-01-PLAN.md — Modify test/e2e.sh: env var config (E2E_SERVER/E2E_BASE_DOMAIN), conditional cleanup, JSON report, completion summary (TEST-01..05)
 - [x] 02-02-PLAN.md — Create test/validate-workflow.sh: YAML syntax + needs-reference resolution checks (VALID-01, VALID-02)
 
+**Status**: COMPLETE — verified 2026-05-22. Live E2E confirmed: Coolify project `csd-e2e-2026-05-22-111012` (staging + production) present. E2E_SERVER override test skipped — no second server available; accepted risk, env var substitution verified statically.
+**UI hint**: no
+
+### Phase 02.1: new-user-onboarding (INSERTED)
+
+**Goal**: A new user who clones this repo and runs `bash test/e2e.sh` without setting any environment variables gets a clear, actionable error pointing at `/setup-coolify init` instead of silently attempting to hit the maintainer's Coolify instance; SKILL.md accurately describes what `provision.sh` actually does (no dead-code function references, no false deploy-trigger claims); README.md opens with a 5-step happy path above the prerequisites; references/api-reference.md uses placeholders instead of maintainer-specific domains.
+**Depends on**: Phase 2
+**Requirements**: ONBOARD-01, ONBOARD-02, ONBOARD-03, ONBOARD-04, ONBOARD-05, ONBOARD-06, ONBOARD-07
+**Success Criteria** (what must be TRUE):
+  1. Running `env -u E2E_SERVER -u E2E_BASE_DOMAIN bash test/e2e.sh` exits 1 with stderr containing both `ERROR: E2E_SERVER is required` and `ERROR: E2E_BASE_DOMAIN is required`, each followed by an actionable next-step (alias-key explanation and `/setup-coolify init` reference for E2E_SERVER; base-domain semantics for E2E_BASE_DOMAIN)
+  2. `grep -c 'streamlinity\|vultr-stream\|cicd' test/e2e.sh SKILL.md references/api-reference.md` returns 0 (no maintainer-specific strings in user-facing scripts and docs)
+  3. SKILL.md execution-flow steps 2 and 6 accurately describe `provision.sh`: step 2 lists the actual functions called (`coolify_upsert_project`, `coolify_get_server_uuid`, `coolify_get_destination_uuid`) and the `server_name` + `ssh_host` lookups; step 6 states that no deploy is triggered and the first deploy happens via push-to-main + the generated workflow
+  4. SKILL.md `See also` section links to `docs/schema.md` (which exists) — not the non-existent `.planning/codebase/COOLIFY_YAML_SCHEMA.md`
+  5. README.md opens with a `## Quick start` section (positioned between `## What you get` and `## Prerequisites`) listing exactly 5 commands and linking to `docs/setup-guide.md` and `docs/fork-guide.md`
+  6. references/api-reference.md begins with a placeholder convention note and uses `<your-coolify-domain>` / `<your-doppler-account>` / `<your-app-domain>` throughout
+**Plans**: 4 plans
+- [ ] 02.1-01-PLAN.md — test/e2e.sh: replace silent E2E_SERVER/E2E_BASE_DOMAIN defaults with actionable missing-var guards; annotate E2E_IMAGE default with origin + custom-image pointer (ONBOARD-01, ONBOARD-02)
+- [ ] 02.1-02-PLAN.md — SKILL.md: rewrite provision-flow steps 2 and 6 to match actual behaviour; replace maintainer init examples with generic placeholders; fix broken See also schema link (ONBOARD-03, ONBOARD-04, ONBOARD-05)
+- [ ] 02.1-03-PLAN.md — README.md: add 5-command Quick start section above Prerequisites with links to setup-guide.md and fork-guide.md (ONBOARD-06)
+- [ ] 02.1-04-PLAN.md — references/api-reference.md: add top-of-file placeholder convention note; replace all `streamlinity` / `coolify.cicd` values with `<your-coolify-domain>` / `<your-doppler-account>` / `<your-app-domain>` (ONBOARD-07)
+
 **UI hint**: no
 
 ### Phase 3: Cleanup Script
@@ -65,4 +87,5 @@ deployment on their Coolify server.
 |-------|----------------|--------|-----------|
 | 1. Bug Fixes | 2/3 | In Progress|  |
 | 2. Test Framework | 1/2 | In Progress|  |
+| 02.1. new-user-onboarding | 0/4 | Not started | - |
 | 3. Cleanup Script | 0/1 | Not started | - |
