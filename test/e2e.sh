@@ -3,7 +3,7 @@
 #
 # Creates a throwaway Coolify project + Doppler project, provisions staging +
 # production apps, triggers a staging deploy, smoke-tests the live URL, and
-# cleans up unconditionally via a trap.
+# cleans up on failure via a trap; on success leaves both apps running.
 #
 # Usage:
 #   bash test/e2e.sh                                  # default server + domain
@@ -75,7 +75,7 @@ pass() { PASS=$((PASS+1)); RESULTS+=("  ✓ $*"); echo "  ✓ $*"; }
 fail() { FAIL=$((FAIL+1)); RESULTS+=("  ✗ $*"); echo "  ✗ $*" >&2; }
 step() { echo ""; echo "=== $* ==="; }
 
-# ── Cleanup (runs unconditionally on EXIT) ─────────────────────────────────────
+# ── Cleanup (runs on failure via EXIT trap; skipped on success) ─────────────────
 
 cleanup() {
   local exit_code=$?
@@ -111,6 +111,18 @@ cleanup() {
       echo "    doppler projects delete $TEST_PROJECT --yes"
     fi
     exit $exit_code
+  fi
+
+  # On success, skip teardown — operator inspects live deployment via the staging URL.
+  # The completion summary (staging URL, report path, cleanup command) is printed
+  # in the main body BEFORE exit 0 fires the trap. Here we only print the
+  # "deployment is live" reminder so it appears after the Test Results banner.
+  if [ "$exit_code" -eq 0 ]; then
+    echo ""
+    echo "  Deployment is live — staging and production apps left running."
+    echo "  Run cleanup when ready:"
+    echo "    bash test/cleanup-deployment.sh ${REPORT_FILE:-<report-file>}"
+    exit 0
   fi
 
   step "Cleanup"
