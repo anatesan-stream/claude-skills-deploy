@@ -137,6 +137,8 @@ write_report() {
     "${PRD_APP_UUID:-}" \
     "$TIMESTAMP" \
     "$SERVER_ALIAS" \
+    "${SSH_HOST:-}" \
+    "${TEST_PROJECT:-}" \
     "${RESULTS[@]+"${RESULTS[@]}"}" \
     <<'PY'
 import sys, json
@@ -145,12 +147,14 @@ from datetime import datetime, timezone
 args = sys.argv[1:]
 report_file = args[0]
 staging_url = "https://" + args[1] if args[1] else ""
-project_uuid = args[2]
+coolify_project_uuid = args[2]
 staging_app_uuid = args[3]
 production_app_uuid = args[4]
 ts_raw = args[5]
 server_alias = args[6]
-result_lines = args[7:]
+ssh_host = args[7]
+doppler_project = args[8]
+result_lines = args[9:]
 
 run_timestamp = datetime.strptime(ts_raw, "%Y%m%d%H%M%S").replace(
     tzinfo=timezone.utc).isoformat()
@@ -166,10 +170,12 @@ for line in result_lines:
 report = {
     "run_timestamp": run_timestamp,
     "server_alias": server_alias,
+    "ssh_host": ssh_host,
     "staging_url": staging_url,
-    "project_uuid": project_uuid,
+    "coolify_project_uuid": coolify_project_uuid,
     "staging_app_uuid": staging_app_uuid,
     "production_app_uuid": production_app_uuid,
+    "doppler_project": doppler_project,
     "steps": steps,
 }
 
