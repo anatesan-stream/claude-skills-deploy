@@ -114,5 +114,4 @@ Resume file: None
 
 ### Next Session TODO
 
-- docs(architecture): convert Overview Mermaid to ASCII (same style as pipeline diagram)
-- docs(architecture): audit right-side box boundary alignment across both ASCII diagrams — fix any ragged right edges
+None.
