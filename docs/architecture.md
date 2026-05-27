@@ -78,41 +78,42 @@ graph LR
 
 Every `git push` to `main` triggers this sequence. The image is built **once** and the same tag is promoted to production — no rebuild.
 
-```mermaid
-%%{init: {"flowchart": {"htmlLabels": true}}}%%
-flowchart LR
-    PUSH["git push\nto main"]
-
-    subgraph CI ["⚙ GitHub Actions"]
-        direction LR
-        BUILD["<div style='text-align:left'><b>build</b><br/>• Docker build<br/>• tag: sha-abc1234<br/>• push to GHCR</div>"]
-        STG_DEPLOY["<div style='text-align:left'><b>deploy-staging</b><br/>• PATCH app → sha-abc1234<br/>• trigger Coolify deploy<br/>• poll until running</div>"]
-        SMOKE["<div style='text-align:left'><b>smoke-test</b><br/>• GET /api/health<br/>• expect HTTP 200</div>"]
-        PRD_DEPLOY["<div style='text-align:left'><b>deploy-production</b><br/>• PATCH app → sha-abc1234<br/>• trigger Coolify deploy<br/>• same image, no rebuild</div>"]
-    end
-
-    subgraph REGISTRY ["🐳 GHCR"]
-        IMG["your-app:sha-abc1234"]
-    end
-
-    subgraph COOLIFY ["🚀 Coolify (VPS)"]
-        STG_APP["Staging app\nyour-app-staging.example.com"]
-        PRD_APP["Production app\nyour-app.example.com"]
-    end
-
-    DOPPLER["🔐 Doppler\nstg + prd service tokens"]
-
-    PUSH        --> BUILD
-    BUILD       -->|"image stored"| IMG
-    BUILD       --> STG_DEPLOY
-    STG_DEPLOY  -->|"deploy API"| STG_APP
-    STG_DEPLOY  --> SMOKE
-    SMOKE       -->|"green"| PRD_DEPLOY
-    PRD_DEPLOY  -->|"deploy API"| PRD_APP
-    IMG         -->|"pulled at\ncontainer start"| STG_APP
-    IMG         -->|"pulled at\ncontainer start"| PRD_APP
-    DOPPLER     -->|"DOPPLER_TOKEN\nsecrets injected\nat container start"| STG_APP
-    DOPPLER     -->|"DOPPLER_TOKEN\nsecrets injected\nat container start"| PRD_APP
+```
+git push → main
+    │
+    ▼
+┌─── GitHub Actions ──────────────────────────────────────────────────────┐
+│                                                                          │
+│  [1] build                                                               │
+│      • docker build, tag sha-abc1234                                     │
+│      • push sha-abc1234 → GHCR                              ┌─────────┐ │
+│                                    image stored ──────────▶ │  GHCR   │ │
+│           │                                                  │ sha-abc │ │
+│           ▼                                                  └────┬────┘ │
+│  [2] deploy-staging                                               │      │
+│      • PATCH staging app → sha-abc1234                            │      │
+│      • trigger Coolify deploy, poll until running                 │      │
+│           │                                                       │      │
+│           ▼                                                       │      │
+│  [3] smoke-test                                                   │      │
+│      • GET /api/health → HTTP 200 required to continue            │      │
+│           │                                                       │      │
+│           ▼                                                       │      │
+│  [4] deploy-production                                            │      │
+│      • PATCH production app → sha-abc1234  (same image, no rebuild)      │
+│      • trigger Coolify deploy, poll until running                 │      │
+│                                                                   │      │
+└───────────────────────────────────────────────────────────────────┼──────┘
+         │ deploy API                    │ deploy API               │ image pull
+         ▼                              ▼                           ▼
+┌─────────────────────┐    ┌──────────────────────┐       (same image
+│  Coolify — staging  │    │  Coolify — production │        for both)
+│  staging.example.com│    │  your-app.example.com │
+└─────────────────────┘    └──────────────────────┘
+         ▲                              ▲
+         └──────────── Doppler ─────────┘
+              DOPPLER_TOKEN set on each app
+              secrets injected at container start
 ```
 
 ---
