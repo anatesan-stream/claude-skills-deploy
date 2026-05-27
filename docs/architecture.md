@@ -34,100 +34,106 @@ flowchart TD
 
 ## End-state component architecture
 
-After setup, this is what exists and how it connects. Everything flows left-to-right: the skill repo installs onto your machine, your machine generates the per-repo config files, and a `git push` drives the runtime deploy loop.
+Seven components work together once setup is complete. The overview below shows how they connect; the pipeline detail that follows zooms into the runtime deploy loop.
+
+### Overview
 
 ```mermaid
+%%{init: {"flowchart": {"htmlLabels": true}}}%%
 graph LR
-    subgraph SKILL_REPO ["📦 GitHub: claude-skills-deploy  (this repo)"]
-        SR["SKILL.md\nscripts/  init/  docs/  references/"]
-    end
+    SKILL_REPO["📦 Skill Repo<br/><i>github: claude-skills-deploy</i>"]
+    DEV["💻 Developer Machine<br/><i>skill + credentials</i>"]
+    APP_REPO["📁 App Repo<br/><i>github: your-org/your-app</i>"]
+    CI["⚙ GitHub Actions<br/><i>CI pipeline</i>"]
+    REGISTRY["🐳 GHCR<br/><i>image registry</i>"]
+    COOLIFY["🚀 Coolify<br/><i>your VPS</i>"]
+    DOPPLER["🔐 Doppler<br/><i>secrets</i>"]
 
-    subgraph DEV ["💻 Developer Machine"]
-        SKILL["~/.claude/skills/setup-coolify/\ninstalled skill"]
-        CJSON["~/.claude/coolify.json\nCoolify URL · API key\nDoppler account · ssh_host"]
-    end
+    SKILL_REPO  -->|"install"| DEV
+    DEV         -->|"init.sh generates"| APP_REPO
+    DEV         -->|"provision"| COOLIFY
+    DEV         -->|"provision"| DOPPLER
+    APP_REPO    -->|"git push triggers"| CI
+    CI          -->|"push image"| REGISTRY
+    CI          -->|"deploy API"| COOLIFY
+    REGISTRY    -->|"pull image"| COOLIFY
+    DOPPLER     -->|"inject secrets"| COOLIFY
+```
 
-    subgraph APP_REPO ["📁 GitHub: your-org/your-app"]
-        YAML["coolify.yaml\ndeploy manifest — committed, no secrets"]
-        WF[".github/workflows/deploy.yml\nCI pipeline — committed"]
-    end
+**What lives in each component:**
+
+| Component | Contents |
+|-----------|----------|
+| **Skill Repo** | `SKILL.md`, `scripts/`, `init/`, `docs/`, `references/` — the skill itself, installed once per machine |
+| **Developer Machine** | `~/.claude/skills/setup-coolify/` (installed skill) · `~/.claude/coolify.json` (Coolify URL, API key, Doppler account, ssh_host) |
+| **App Repo** | `coolify.yaml` (deploy manifest, committed, no secrets) · `.github/workflows/deploy.yml` (CI pipeline, committed) |
+| **GitHub Actions** | Build job · deploy-staging job · smoke-test · deploy-production job (see pipeline detail below) |
+| **GHCR** | Docker images tagged by git SHA — `your-app:abc1234`, `your-app:def5678`, … |
+| **Coolify** | Staging app (`your-app-staging.example.com`) · Production app (`your-app.example.com`) · both with `DOPPLER_TOKEN` env var |
+| **Doppler** | One project per app · `stg` config with service token A · `prd` config with service token B |
+
+---
+
+### Runtime pipeline detail
+
+Every `git push` to `main` triggers this sequence. The image is built **once** and the same tag is promoted to production — no rebuild.
+
+```mermaid
+%%{init: {"flowchart": {"htmlLabels": true}}}%%
+flowchart LR
+    PUSH["git push\nto main"]
 
     subgraph CI ["⚙ GitHub Actions"]
-        BUILD["build Docker image\ntag: git short SHA"]
-        PUSH_IMG["push to GHCR"]
-        DEPLOY_STG["PATCH staging → new tag\ntrigger Coolify deploy"]
-        SMOKE["smoke test\nHTTP GET /health"]
-        DEPLOY_PRD["PATCH production → same tag\ntrigger Coolify deploy\n(no rebuild)"]
+        direction LR
+        BUILD["<div style='text-align:left'><b>build</b><br/>• Docker build<br/>• tag: sha-abc1234<br/>• push to GHCR</div>"]
+        STG_DEPLOY["<div style='text-align:left'><b>deploy-staging</b><br/>• PATCH app → sha-abc1234<br/>• trigger Coolify deploy<br/>• poll until running</div>"]
+        SMOKE["<div style='text-align:left'><b>smoke-test</b><br/>• GET /api/health<br/>• expect HTTP 200</div>"]
+        PRD_DEPLOY["<div style='text-align:left'><b>deploy-production</b><br/>• PATCH app → sha-abc1234<br/>• trigger Coolify deploy<br/>• same image, no rebuild</div>"]
     end
 
-    subgraph REGISTRY ["🐳 GHCR\nghcr.io/your-org/your-app"]
-        IMGS["your-app:abc1234\nyour-app:def5678 …"]
+    subgraph REGISTRY ["🐳 GHCR"]
+        IMG["your-app:sha-abc1234"]
     end
 
-    subgraph COOLIFY ["🚀 Coolify  (your VPS)"]
-        STG["Staging app\nyour-app-staging.example.com"]
-        PRD["Production app\nyour-app.example.com"]
+    subgraph COOLIFY ["🚀 Coolify (VPS)"]
+        STG_APP["Staging app\nyour-app-staging.example.com"]
+        PRD_APP["Production app\nyour-app.example.com"]
     end
 
-    subgraph DOPPLER ["🔐 Doppler"]
-        DS["staging config\nservice token A"]
-        DP_["production config\nservice token B"]
-    end
+    DOPPLER["🔐 Doppler\nstg + prd service tokens"]
 
-    SR        -->|"git clone"| SKILL
-    SKILL     -->|"init.sh generates"| YAML
-    SKILL     -->|"init.sh generates"| WF
-    CJSON     -->|"/setup-coolify\nprovisions apps\n+ wires tokens"| COOLIFY
-    CJSON     -->|"/setup-coolify\ncreates service tokens"| DOPPLER
-
-    YAML      -->|"read by workflow"| CI
-    WF        -->|"triggers on\ngit push → main"| BUILD
-    BUILD     --> PUSH_IMG
-    BUILD     --> DEPLOY_STG
-    PUSH_IMG  --> IMGS
-    DEPLOY_STG --> SMOKE
-    SMOKE     --> DEPLOY_PRD
-    DEPLOY_STG -->|"deploy API"| STG
-    DEPLOY_PRD -->|"deploy API"| PRD
-    STG       -->|"pulls image"| IMGS
-    PRD       -->|"pulls image"| IMGS
-    DS        -->|"DOPPLER_TOKEN\nDoppler CLI injects\nsecrets at container start"| STG
-    DP_       -->|"DOPPLER_TOKEN\nDoppler CLI injects\nsecrets at container start"| PRD
+    PUSH        --> BUILD
+    BUILD       -->|"image stored"| IMG
+    BUILD       --> STG_DEPLOY
+    STG_DEPLOY  -->|"deploy API"| STG_APP
+    STG_DEPLOY  --> SMOKE
+    SMOKE       -->|"green"| PRD_DEPLOY
+    PRD_DEPLOY  -->|"deploy API"| PRD_APP
+    IMG         -->|"pulled at\ncontainer start"| STG_APP
+    IMG         -->|"pulled at\ncontainer start"| PRD_APP
+    DOPPLER     -->|"DOPPLER_TOKEN\nsecrets injected\nat container start"| STG_APP
+    DOPPLER     -->|"DOPPLER_TOKEN\nsecrets injected\nat container start"| PRD_APP
 ```
 
 ---
 
 ## What lives where after setup
 
-| Location | What's there | Committed? |
-|----------|-------------|-----------|
-| `~/.claude/skills/setup-coolify/` | Skill files (SKILL.md, scripts, init, docs) | No — local install |
+| Location | Contents | Committed? |
+|----------|----------|-----------|
+| `~/.claude/skills/setup-coolify/` | Skill files — `SKILL.md`, `scripts/`, `init/`, `docs/` | No — local install |
 | `~/.claude/coolify.json` | Coolify URL + API key + Doppler account + `ssh_host` | **Never** — contains secrets |
 | `your-app/coolify.yaml` | Deploy manifest: project slug, server alias, domains, env var names | **Yes** — no secrets |
 | `your-app/.github/workflows/deploy.yml` | GitHub Actions pipeline (build → GHCR → Coolify) | **Yes** |
 | GHCR | Docker images tagged by git SHA; N most recent kept | N/A |
-| Coolify (VPS) | Staging app + production app with `DOPPLER_TOKEN` env var set | N/A |
-| Doppler | Project with `staging` + `production` configs; service tokens per env | N/A |
-
----
-
-## How same-image promotion works
-
-The pipeline builds the Docker image **once** (tagged with the git SHA) and deploys the exact same tag to both environments. Secrets are never baked into the image — they are injected at container start by the Doppler CLI installed in the Dockerfile.
-
-```
-git push
-  └─► build image → tag :abc1234 → push GHCR
-        └─► deploy staging (tag :abc1234) → smoke test
-              └─► deploy production (same tag :abc1234, no rebuild)
-```
-
-This means staging and production always run the same binary. Promotion is a config change (which tag Coolify points at), not a new build.
+| Coolify (VPS) | Staging app + production app, each with `DOPPLER_TOKEN` env var | N/A |
+| Doppler | One project per app; `stg` + `prd` configs with scoped service tokens | N/A |
 
 ---
 
 ## See also
 
 - [Setup guide](./setup-guide.md) — step-by-step walkthrough with concrete commands
+- [Test environment](./test-environment.md) — E2E prerequisites, run/inspect/cleanup workflow
 - [Schema reference](./schema.md) — all `coolify.yaml` and `coolify.json` fields documented
 - [Fork guide](./fork-guide.md) — using this skill for a second domain (e.g. strategem.ai)
