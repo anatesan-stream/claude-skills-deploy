@@ -235,3 +235,10 @@ re-run against the same report if interrupted.
 | `ERROR: report file missing fields: ssh_host, doppler_project` | Report was written by a pre-Phase-3 version of `e2e.sh` | Use a report from a recent run, or patch the JSON manually with the missing fields |
 | `⚠ could not delete Coolify project` after cleanup | Project delete failed even after retry | The project may contain other apps not created by this test run. Delete manually in Coolify UI. |
 | Doppler delete fails | `csd-e2e-*` project already deleted or CLI not authenticated | Re-authenticate with `doppler login` and retry, or delete manually at `dashboard.doppler.com` |
+
+---
+
+## Next Steps
+
+- **Return to the Setup Guide:** Go back to **[docs/setup-guide.md](./setup-guide.md)** to continue bootstrapping your application repositories.
+- **Review Field Schemas:** Refer to **[docs/schema.md](./schema.md)** for a full field-by-field reference of `coolify.yaml` and `coolify.json`.
